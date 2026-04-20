@@ -81,6 +81,15 @@
   }
 
   // ========== API Calls ==========
+  /**
+   * Translate text using OpenAI API
+   * @param {string} text - Text to translate
+   * @param {string} model - Model to use
+   * @param {string} apiKey - API key for authentication
+   * @param {string} sourceLang - Source language code or 'auto'
+   * @param {string} targetLang - Target language code
+   * @returns {Promise<string>} Translated text
+   */
   async function translateWithOpenAI(text, model, apiKey, sourceLang, targetLang) {
     const prompt = sourceLang === 'auto'
       ? `Translate the following text to ${targetLang}. Only output the translation, no explanations. Text: ${text}`
@@ -107,6 +116,15 @@
     return data.choices[0].message.content.trim();
   }
 
+  /**
+   * Translate text using Anthropic API
+   * @param {string} text - Text to translate
+   * @param {string} model - Model to use
+   * @param {string} apiKey - API key for authentication
+   * @param {string} sourceLang - Source language code or 'auto'
+   * @param {string} targetLang - Target language code
+   * @returns {Promise<string>} Translated text
+   */
   async function translateWithAnthropic(text, model, apiKey, sourceLang, targetLang) {
     const prompt = sourceLang === 'auto'
       ? `Translate the following text to ${targetLang}. Only output the translation, no explanations. Text: ${text}`
@@ -134,6 +152,15 @@
     return data.content[0].text.trim();
   }
 
+  /**
+   * Translate text using Google Gemini API
+   * @param {string} text - Text to translate
+   * @param {string} model - Model to use
+   * @param {string} apiKey - API key for authentication
+   * @param {string} sourceLang - Source language code or 'auto'
+   * @param {string} targetLang - Target language code
+   * @returns {Promise<string>} Translated text
+   */
   async function translateWithGemini(text, model, apiKey, sourceLang, targetLang) {
     const langInstruction = sourceLang === 'auto'
       ? `Translate to ${targetLang}`
@@ -162,6 +189,16 @@
     return data.candidates[0].content.parts[0].text.trim();
   }
 
+  /**
+   * Route translation to the appropriate provider
+   * @param {string} text - Text to translate
+   * @param {string} provider - Provider ID (openai, anthropic, gemini)
+   * @param {string} model - Model to use
+   * @param {string} apiKey - API key for authentication
+   * @param {string} sourceLang - Source language code or 'auto'
+   * @param {string} targetLang - Target language code
+   * @returns {Promise<string>} Translated text
+   */
   async function doTranslate(text, provider, model, apiKey, sourceLang, targetLang) {
     switch (provider) {
       case 'openai': return translateWithOpenAI(text, model, apiKey, sourceLang, targetLang);
@@ -171,6 +208,12 @@
     }
   }
 
+  /**
+   * Handle messages from content script
+   * @param {Object} message - Message object with action and data
+   * @param {Object} sender - Sender information
+   * @returns {Promise<Object>} Response object
+   */
   // ========== Message Handler ==========
   async function handleMessage(message, sender) {
     const { action, text, url } = message;
@@ -235,7 +278,9 @@
             if (sitePrefs[domain].sourceLang) sourceLang = sitePrefs[domain].sourceLang;
             if (sitePrefs[domain].targetLang) targetLang = sitePrefs[domain].targetLang;
           }
-        } catch (e) { /* ignore URL parse errors */ }
+        } catch (e) {
+          console.error('AI Translate: Failed to parse URL for site pref', e.message);
+        }
       }
 
       const result = await doTranslate(
@@ -255,7 +300,9 @@
         const sitePrefs = await storageGet(STORAGE_KEYS.SITE_PREFS) || {};
         sitePrefs[domain] = { sourceLang: message.sourceLang, targetLang: message.targetLang };
         await storageSet(STORAGE_KEYS.SITE_PREFS, sitePrefs);
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+          console.error('AI Translate: Failed to parse URL for site pref', e.message);
+        }
       return { success: true };
     }
 
