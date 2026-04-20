@@ -11,14 +11,20 @@
   let currentPanel = null;
   let userPrefs = null;
 
-  // 初始化
-  async function init() {
+  /**
+ * Initializes the content script
+ * @private
+ */
+async function init() {
     userPrefs = await chrome.runtime.sendMessage({ action: 'getUserPrefs' });
     setupSelectionListener();
     setupKeyboardShortcuts();
   }
 
-  // 划词监听
+  /**
+ * Sets up mouseup listener for text selection
+ * @private
+ */
   function setupSelectionListener() {
     document.addEventListener('mouseup', async (e) => {
       if (!userPrefs.triggerMode.bubbleButton && !userPrefs.triggerMode.instant) return;
@@ -41,7 +47,10 @@
     });
   }
 
-  // 快捷键
+  /**
+ * Sets up keyboard shortcuts for translation
+ * @private
+ */
   function setupKeyboardShortcuts() {
     if (!userPrefs.triggerMode.shortcut) return;
     document.addEventListener('keydown', (e) => {
@@ -57,7 +66,13 @@
     });
   }
 
-  // 显示气泡按钮
+  /**
+ * Shows a bubble button at the specified position
+ * @param {string} text - The text to translate
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @private
+ */
   function showBubbleButton(text, x, y) {
     removeBubbleButton();
     const btn = document.createElement('div');
@@ -73,6 +88,10 @@
     currentBubble = btn;
   }
 
+  /**
+ * Removes the bubble button
+ * @private
+ */
   function removeBubbleButton() {
     if (currentBubble) {
       currentBubble.remove();
@@ -80,7 +99,13 @@
     }
   }
 
-  // 显示翻译结果
+  /**
+ * Shows the translation result in the specified style
+ * @param {string} text - The text to translate
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @private
+ */
   async function showTranslation(text, x, y) {
     removeBubbleButton();
 
@@ -109,7 +134,14 @@
     }
   }
 
-  // 气泡样式
+  /**
+ * Shows translation result in a bubble
+ * @param {string} originalText - Original text
+ * @param {string} translatedText - Translated text
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @private
+ */
   function showBubble(originalText, translatedText, x, y) {
     const bubble = document.createElement('div');
     bubble.className = 'ai-translate-bubble';
@@ -139,7 +171,12 @@
     currentBubble = bubble;
   }
 
-  // 侧边面板样式
+  /**
+ * Shows translation result in a side panel
+ * @param {string} translatedText - Translated text
+ * @param {string} detectedLang - Detected language
+ * @private
+ */
   function showPanel(translatedText, detectedLang) {
     if (currentPanel) currentPanel.remove();
     const panel = document.createElement('div');
@@ -156,7 +193,14 @@
     currentPanel = panel;
   }
 
-  // 原生下嵌样式
+  /**
+ * Shows translation result inline below selected text
+ * @param {string} originalText - Original text
+ * @param {string} translatedText - Translated text
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @private
+ */
   function showInline(originalText, translatedText, x, y) {
     const container = document.createElement('div');
     container.className = 'ai-translate-inline';
@@ -169,7 +213,13 @@
     range.insertNode(container);
   }
 
-  // 错误显示
+  /**
+ * Shows an error message
+ * @param {string} msg - Error message
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @private
+ */
   function showError(msg, x, y) {
     const err = document.createElement('div');
     err.className = 'ai-translate-error';
@@ -179,7 +229,12 @@
     setTimeout(() => err.remove(), 3000);
   }
 
-  // HTML 转义
+  /**
+ * Escapes HTML special characters
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ * @private
+ */
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -201,7 +256,10 @@
     }
   });
 
-  // 整页翻译
+  /**
+ * Translates the entire page
+ * @private
+ */
   async function translatePage() {
     // TODO: 实现整页翻译逻辑
     alert('整页翻译功能待实现');
