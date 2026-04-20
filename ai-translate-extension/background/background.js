@@ -61,12 +61,21 @@
   function getDefaultApiConfig() {
     return {
       providers: [
+        // 国外模型
         { id: 'openai', name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini'], defaultModel: 'gpt-4o-mini' },
         { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4-6', 'claude-opus-4-6'], defaultModel: 'claude-sonnet-4-6' },
-        { id: 'gemini', name: 'Google Gemini', models: ['gemini-2.5-pro-preview', 'gemini-2.0-flash'], defaultModel: 'gemini-2.0-flash' }
+        { id: 'gemini', name: 'Google Gemini', models: ['gemini-2.5-pro-preview', 'gemini-2.0-flash'], defaultModel: 'gemini-2.0-flash' },
+        // 国内模型
+        { id: 'qwen', name: '阿里云通义千问', models: ['qwen-plus', 'qwen-plus', 'qwen-turbo', 'qwen-max'], defaultModel: 'qwen-plus', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+        { id: 'deepseek', name: '深度求索 DeepSeek', models: ['deepseek-chat', 'deepseek-coder'], defaultModel: 'deepseek-chat', baseUrl: 'https://api.deepseek.com' },
+        { id: 'zhipu', name: '智谱 AI GLM', models: ['glm-4', 'glm-4-flash', 'glm-4-plus', 'glm-3-turbo'], defaultModel: 'glm-4', baseUrl: 'https://open.bigmodel.cn/api/paas/v4' },
+        { id: 'baidu', name: '百度文心一言', models: ['ernie-4.0-8k-latest', 'ernie-4.0-8k-preview', 'ernie-3.5-8k-latest'], defaultModel: 'ernie-4.0-8k-latest', baseUrl: 'https://qianfan.ai.baidubce.com/v2' },
+        { id: 'minimax', name: 'MiniMax', models: ['MiniMax-Text-01', 'abab6.5s-chat'], defaultModel: 'MiniMax-Text-01', baseUrl: 'https://api.minimax.chat/v1' },
+        { id: 'moonshot', name: '月之暗面 Kimi', models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'], defaultModel: 'moonshot-v1-8k', baseUrl: 'https://api.moonshot.cn/v1' },
+        { id: 'tencent', name: '腾讯混元', models: ['hunyuan-pro', 'hunyuan-standard', 'hunyuan-lite'], defaultModel: 'hunyuan-standard', baseUrl: 'https://hunyuan.cloud.tencent.com' }
       ],
-      activeProvider: 'anthropic',
-      apiKeys: { openai: '', anthropic: '', gemini: '' }
+      activeProvider: 'deepseek',
+      apiKeys: { openai: '', anthropic: '', gemini: '', qwen: '', deepseek: '', zhipu: '', baidu: '', minimax: '', moonshot: '', tencent: '' }
     };
   }
 
@@ -205,12 +214,51 @@
       case 'openai': return translateWithOpenAI(text, model, apiKey, sourceLang, targetLang);
       case 'anthropic': return translateWithAnthropic(text, model, apiKey, sourceLang, targetLang);
       case 'gemini': return translateWithGemini(text, model, apiKey, sourceLang, targetLang);
+      case 'qwen':
+      case 'deepseek':
+      case 'zhipu':
+      case 'baidu':
+      case 'minimax':
+      case 'moonshot':
+      case 'tencent':
+        return translateWithOpenAICompatible(text, model, apiKey, sourceLang, targetLang, baseUrl);
       default:
         if (provider.startsWith('custom_')) {
           return translateWithCustom(text, model, apiKey, sourceLang, targetLang, baseUrl);
         }
         throw new Error(`Unknown provider: ${provider}`);
     }
+  }
+
+  /**
+   * Translate using OpenAI-compatible API (used by most Chinese providers)
+   */
+  async function translateWithOpenAICompatible(text, model, apiKey, sourceLang, targetLang, baseUrl) {
+    const prompt = sourceLang === 'auto'
+      ? `Translate the following text to ${targetLang}. Only output the translation, no explanations. Text: ${text}`
+      : `Translate from ${sourceLang} to ${targetLang}. Only output the translation. Text: ${text}`;
+
+    const endpoint = baseUrl.endsWith('/') ? baseUrl + 'chat/completions' : baseUrl + '/chat/completions';
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid API response structure');
+    }
+    return data.choices[0].message.content.trim();
   }
 
   /**
