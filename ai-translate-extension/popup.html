@@ -30,6 +30,18 @@
     </section>
 
     <section class="section">
+      <h2>自定义提供商</h2>
+      <div id="custom-providers-list"></div>
+      <div class="custom-provider-form">
+        <input type="text" id="new-provider-name" placeholder="名称 (如 My Provider)">
+        <input type="text" id="new-provider-base-url" placeholder="API Base URL (如 https://api.openai.com/v1)">
+        <input type="text" id="new-provider-model" placeholder="模型名称 (如 gpt-4o)">
+        <input type="password" id="new-provider-key" placeholder="API Key">
+        <button id="add-provider-btn" class="btn-secondary">添加</button>
+      </div>
+    </section>
+
+    <section class="section">
       <h2>翻译触发</h2>
       <label class="checkbox-label">
         <input type="checkbox" id="trigger-bubble"> 划词气泡按钮

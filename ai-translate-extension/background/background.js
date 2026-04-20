@@ -192,20 +192,63 @@
   /**
    * Route translation to the appropriate provider
    * @param {string} text - Text to translate
-   * @param {string} provider - Provider ID (openai, anthropic, gemini)
+   * @param {string} provider - Provider ID (openai, anthropic, gemini, or custom_*)
    * @param {string} model - Model to use
    * @param {string} apiKey - API key for authentication
    * @param {string} sourceLang - Source language code or 'auto'
    * @param {string} targetLang - Target language code
+   * @param {string} baseUrl - Base URL for custom providers (optional)
    * @returns {Promise<string>} Translated text
    */
-  async function doTranslate(text, provider, model, apiKey, sourceLang, targetLang) {
+  async function doTranslate(text, provider, model, apiKey, sourceLang, targetLang, baseUrl) {
     switch (provider) {
       case 'openai': return translateWithOpenAI(text, model, apiKey, sourceLang, targetLang);
       case 'anthropic': return translateWithAnthropic(text, model, apiKey, sourceLang, targetLang);
       case 'gemini': return translateWithGemini(text, model, apiKey, sourceLang, targetLang);
-      default: throw new Error(`Unknown provider: ${provider}`);
+      default:
+        if (provider.startsWith('custom_')) {
+          return translateWithCustom(text, model, apiKey, sourceLang, targetLang, baseUrl);
+        }
+        throw new Error(`Unknown provider: ${provider}`);
     }
+  }
+
+  /**
+   * Translate text using a custom provider with OpenAI-compatible API
+   * @param {string} text - Text to translate
+   * @param {string} model - Model to use
+   * @param {string} apiKey - API key for authentication
+   * @param {string} sourceLang - Source language code or 'auto'
+   * @param {string} targetLang - Target language code
+   * @param {string} baseUrl - Custom API base URL
+   * @returns {Promise<string>} Translated text
+   */
+  async function translateWithCustom(text, model, apiKey, sourceLang, targetLang, baseUrl) {
+    const prompt = sourceLang === 'auto'
+      ? `Translate the following text to ${targetLang}. Only output the translation, no explanations. Text: ${text}`
+      : `Translate from ${sourceLang} to ${targetLang}. Only output the translation. Text: ${text}`;
+
+    const endpoint = baseUrl.endsWith('/') ? baseUrl + 'chat/completions' : baseUrl + '/chat/completions';
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.3 })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Custom API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid custom API response structure');
+    }
+    return data.choices[0].message.content.trim();
   }
 
   /**
@@ -289,7 +332,8 @@
         provider.defaultModel,
         apiConfig.apiKeys[apiConfig.activeProvider],
         sourceLang,
-        targetLang
+        targetLang,
+        provider.baseUrl || null
       );
       return { result, detectedLang: sourceLang };
     }

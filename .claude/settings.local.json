@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(node --check \"D:/Projects/claude-demo4/ai-translate-extension/lib/storage.js\")",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(gh repo:*)"
+    ]
+  }
+}
