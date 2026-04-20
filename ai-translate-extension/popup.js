@@ -201,6 +201,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // 管理 API Keys
+  const modal = document.getElementById('keys-modal');
+  const keysList = document.getElementById('keys-list');
+
+  function renderKeysModal() {
+    keysList.innerHTML = '';
+    apiConfig.providers.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'key-item';
+      item.innerHTML = `
+        <label>${escapeHtml(p.name)} (${escapeHtml(p.id)})</label>
+        <input type="password" data-provider="${escapeHtml(p.id)}" value="${escapeHtml(apiConfig.apiKeys[p.id] || '')}" placeholder="API Key">
+      `;
+      keysList.appendChild(item);
+    });
+  }
+
+  document.getElementById('manage-keys-btn').addEventListener('click', () => {
+    renderKeysModal();
+    modal.classList.remove('hidden');
+  });
+
+  document.getElementById('close-keys-modal').addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.add('hidden');
+  });
+
+  document.getElementById('save-all-keys-btn').addEventListener('click', async () => {
+    document.querySelectorAll('.key-item input').forEach(input => {
+      const providerId = input.dataset.provider;
+      apiConfig.apiKeys[providerId] = input.value;
+    });
+    await sendMessage({ action: 'saveApiConfig', config: apiConfig });
+    modal.classList.add('hidden');
+    showStatus('已保存', 'success');
+  });
+
   function showStatus(msg, type) {
     const el = document.getElementById('save-status');
     el.textContent = msg;

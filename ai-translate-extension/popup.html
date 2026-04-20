@@ -105,6 +105,19 @@
       <input type="file" id="import-file" accept=".json" style="display:none">
     </section>
   </div>
+
+  <!-- API Keys Manager Modal -->
+  <div id="keys-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>管理 API Keys</h2>
+        <button id="close-keys-modal" class="modal-close">&times;</button>
+      </div>
+      <div id="keys-list"></div>
+      <button id="save-all-keys-btn" class="btn-primary">保存全部</button>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
