@@ -257,13 +257,150 @@ async function init() {
   });
 
   /**
- * Translates the entire page
+ * Translates the entire page content
  * @private
  */
-  async function translatePage() {
-    // TODO: 实现整页翻译逻辑
-    alert('整页翻译功能待实现');
+async function translatePage() {
+  const progressBar = document.createElement('div');
+  progressBar.className = 'ai-translate-progress';
+  progressBar.innerHTML = '<div class="ai-translate-progress-bar"></div><span>翻译中...</span>';
+  progressBar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#fff;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-family:sans-serif;font-size:14px;display:flex;align-items:center;gap:10px;';
+  progressBar.querySelector('.ai-translate-progress-bar').style.cssText = 'flex:1;height:4px;background:#4A90D9;transition:width 0.3s;width:0%;';
+  document.body.appendChild(progressBar);
+
+  try {
+    // 1. 提取页面文本节点
+    const textNodes = getTextNodes(document.body);
+    const chunks = chunkTextNodes(textNodes, 3000); // 按字符数分块
+
+    progressBar.querySelector('.ai-translate-progress-bar').style.width = '10%';
+
+    // 2. 逐块翻译
+    const translatedChunks = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const response = await chrome.runtime.sendMessage({
+        action: 'translate',
+        text: chunks[i].text,
+        url: location.href,
+        sourceLang: userPrefs.sourceLang
+      });
+
+      if (response.error) throw new Error(response.error);
+
+      translatedChunks.push({
+        nodes: chunks[i].nodes,
+        translated: response.result,
+        detectedLang: response.detectedLang
+      });
+
+      progressBar.querySelector('.ai-translate-progress-bar').style.width =
+        `${10 + (i + 1) / chunks.length * 80}%`;
+    }
+
+    // 3. 创建译文容器
+    const container = document.createElement('div');
+    container.className = 'ai-translate-page-container';
+
+    // 添加头部
+    const header = document.createElement('div');
+    header.className = 'ai-translate-page-header';
+    header.innerHTML = `
+      <div class="ai-translate-page-toolbar">
+        <button class="ai-translate-view-toggle active" data-view="both">双语</button>
+        <button class="ai-translate-view-toggle" data-view="original">原文</button>
+        <button class="ai-translate-view-toggle" data-view="translated">译文</button>
+        <button class="ai-translate-close-page">&times;</button>
+      </div>
+    `;
+    container.appendChild(header);
+
+    // 4. 插入译文
+    for (const chunk of translatedChunks) {
+      const block = document.createElement('div');
+      block.className = 'ai-translate-page-block';
+      block.innerHTML = `
+        <div class="ai-translate-original">${escapeHtml(chunk.nodes.map(n => n.textContent).join(''))}</div>
+        <div class="ai-translate-translated">${escapeHtml(chunk.translated)}</div>
+      `;
+      container.appendChild(block);
+    }
+
+    // 分隔线
+    const divider = document.createElement('div');
+    divider.className = 'ai-translate-divider';
+    divider.textContent = '--- 译文结束 ---';
+    container.appendChild(divider);
+
+    document.body.appendChild(container);
+    progressBar.querySelector('.ai-translate-progress-bar').style.width = '100%';
+    setTimeout(() => progressBar.remove(), 500);
+
+    // 工具栏交互
+    header.querySelectorAll('.ai-translate-view-toggle').forEach(btn => {
+      btn.onclick = () => {
+        header.querySelectorAll('.ai-translate-view-toggle').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        container.dataset.view = view;
+      };
+    });
+    header.querySelector('.ai-translate-close-page').onclick = () => container.remove();
+
+  } catch (err) {
+    progressBar.querySelector('span').textContent = `翻译失败: ${err.message}`;
+    setTimeout(() => progressBar.remove(), 3000);
   }
+}
+
+/**
+ * Gets all text nodes in an element (skipping code blocks)
+ * @param {Element} element
+ * @returns {Text[]}
+ * @private
+ */
+function getTextNodes(element) {
+  const nodes = [];
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'IFRAME'].includes(parent.tagName)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  return nodes;
+}
+
+/**
+ * Chunks text nodes into groups by character count
+ * @param {Text[]} nodes
+ * @param {number} maxChars
+ * @returns {Array<{text: string, nodes: Text[]}>}
+ * @private
+ */
+function chunkTextNodes(nodes, maxChars) {
+  const chunks = [];
+  let currentChunk = { text: '', nodes: [] };
+  let currentLength = 0;
+
+  for (const node of nodes) {
+    const text = node.textContent;
+    if (currentLength + text.length > maxChars && currentLength > 0) {
+      chunks.push(currentChunk);
+      currentChunk = { text: '', nodes: [] };
+      currentLength = 0;
+    }
+    currentChunk.text += text;
+    currentChunk.nodes.push(node);
+    currentLength += text.length;
+  }
+  if (currentChunk.nodes.length > 0) chunks.push(currentChunk);
+  return chunks;
+}
 
   init();
 })();
