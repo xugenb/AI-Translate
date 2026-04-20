@@ -245,9 +245,14 @@ renderCustomProviders();
     modelsList.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const index = parseInt(btn.dataset.index);
-        const newName = prompt('请输入新模型名称:', provider.models[index]);
-        if (newName && newName.trim()) {
+        const oldName = provider.models[index];
+        const newName = prompt('请输入新模型名称:', oldName);
+        if (newName && newName.trim() && newName.trim() !== oldName) {
           provider.models[index] = newName.trim();
+          // Sync defaultModel if it was renamed
+          if (provider.defaultModel === oldName) {
+            provider.defaultModel = newName.trim();
+          }
           renderModelsModal();
         }
       });
