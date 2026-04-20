@@ -381,7 +381,10 @@ function getTextNodes(element) {
       }
       // 标记代码块父元素
       if (parent.closest('pre')) {
-        parent.closest('pre').classList.add('ai-translate-code-block');
+        const pre = parent.closest('pre');
+        if (!pre.classList.contains('ai-translate-code-block')) {
+          pre.classList.add('ai-translate-code-block');
+        }
         return NodeFilter.FILTER_REJECT;
       }
       if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
