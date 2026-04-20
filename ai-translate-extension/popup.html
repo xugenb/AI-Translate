@@ -19,7 +19,10 @@
       </div>
       <div class="form-group">
         <label>模型</label>
-        <select id="model-select"></select>
+        <div class="model-select-wrapper">
+          <select id="model-select"></select>
+          <button id="edit-models-btn" class="btn-secondary" type="button">编辑模型</button>
+        </div>
       </div>
       <div class="form-group">
         <label>API Key</label>
@@ -105,6 +108,22 @@
       </div>
       <input type="file" id="import-file" accept=".json" style="display:none">
     </section>
+  </div>
+
+  <!-- Models Manager Modal -->
+  <div id="models-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>管理模型 - <span id="models-provider-name"></span></h2>
+        <button id="close-models-modal" class="modal-close">&times;</button>
+      </div>
+      <div id="models-list"></div>
+      <div class="model-add-form">
+        <input type="text" id="new-model-name" placeholder="模型名称">
+        <button id="add-model-btn" class="btn-secondary">添加模型</button>
+      </div>
+      <button id="save-models-btn" class="btn-primary">保存</button>
+    </div>
   </div>
 
   <!-- API Keys Manager Modal -->

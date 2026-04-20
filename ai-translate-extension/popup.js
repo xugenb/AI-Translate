@@ -213,7 +213,110 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateProviderSelect();
   });
 
-  renderCustomProviders();
+renderCustomProviders();
+
+  // ========== Model Management ==========
+  const modelsModal = document.getElementById('models-modal');
+  const modelsList = document.getElementById('models-list');
+  let currentEditingProvider = null;
+  let editingModelIndex = null;
+
+  function renderModelsModal() {
+    const provider = apiConfig.providers.find(p => p.id === currentEditingProvider);
+    if (!provider) return;
+
+    document.getElementById('models-provider-name').textContent = provider.name;
+    modelsList.innerHTML = '';
+
+    provider.models.forEach((model, index) => {
+      const item = document.createElement('div');
+      item.className = 'model-item';
+      item.innerHTML = `
+        <span class="model-name">${escapeHtml(model)}</span>
+        <div class="model-actions">
+          <button class="edit-btn" data-index="${index}">编辑</button>
+          <button class="delete-btn" data-index="${index}">删除</button>
+        </div>
+      `;
+      modelsList.appendChild(item);
+    });
+
+    // Edit button handlers
+    modelsList.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.index);
+        const newName = prompt('请输入新模型名称:', provider.models[index]);
+        if (newName && newName.trim()) {
+          provider.models[index] = newName.trim();
+          renderModelsModal();
+        }
+      });
+    });
+
+    // Delete button handlers
+    modelsList.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.index);
+        if (provider.models.length <= 1) {
+          showStatus('至少保留一个模型', 'error');
+          return;
+        }
+        provider.models.splice(index, 1);
+        renderModelsModal();
+      });
+    });
+  }
+
+  document.getElementById('edit-models-btn').addEventListener('click', () => {
+    currentEditingProvider = providerSelect.value;
+    editingModelIndex = null;
+    document.getElementById('new-model-name').value = '';
+    renderModelsModal();
+    modelsModal.classList.remove('hidden');
+  });
+
+  document.getElementById('close-models-modal').addEventListener('click', () => {
+    modelsModal.classList.add('hidden');
+  });
+
+  modelsModal.addEventListener('click', (e) => {
+    if (e.target === modelsModal) modelsModal.classList.add('hidden');
+  });
+
+  document.getElementById('add-model-btn').addEventListener('click', () => {
+    const provider = apiConfig.providers.find(p => p.id === currentEditingProvider);
+    if (!provider) return;
+
+    const name = document.getElementById('new-model-name').value.trim();
+    if (!name) {
+      showStatus('请输入模型名称', 'error');
+      return;
+    }
+
+    if (provider.models.includes(name)) {
+      showStatus('模型已存在', 'error');
+      return;
+    }
+
+    provider.models.push(name);
+    document.getElementById('new-model-name').value = '';
+    renderModelsModal();
+  });
+
+  document.getElementById('save-models-btn').addEventListener('click', async () => {
+    const provider = apiConfig.providers.find(p => p.id === currentEditingProvider);
+    if (!provider) return;
+
+    // Update default model if current default is no longer in list
+    if (!provider.models.includes(provider.defaultModel)) {
+      provider.defaultModel = provider.models[0];
+    }
+
+    await sendMessage({ action: 'saveApiConfig', config: apiConfig });
+    updateModelSelect(currentEditingProvider);
+    modelsModal.classList.add('hidden');
+    showStatus('已保存', 'success');
+  });
 
   // 触发方式
   document.getElementById('trigger-bubble').checked = userPrefs.triggerMode.bubbleButton;
