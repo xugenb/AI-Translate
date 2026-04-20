@@ -364,7 +364,7 @@ function getTextNodes(element) {
     acceptNode: (node) => {
       const parent = node.parentElement;
       if (!parent) return NodeFilter.FILTER_REJECT;
-      if (['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'IFRAME'].includes(parent.tagName)) {
+      if (['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'IFRAME', 'TEXTAREA', 'INPUT'].includes(parent.tagName)) {
         return NodeFilter.FILTER_REJECT;
       }
       if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
@@ -383,6 +383,7 @@ function getTextNodes(element) {
  * @private
  */
 function chunkTextNodes(nodes, maxChars) {
+  if (maxChars <= 0) throw new Error('maxChars must be positive');
   const chunks = [];
   let currentChunk = { text: '', nodes: [] };
   let currentLength = 0;
