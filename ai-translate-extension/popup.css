@@ -46,7 +46,8 @@ body { width: 380px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
 .custom-provider-item .provider-info { flex: 1; }
 .custom-provider-item .provider-name { font-weight: 600; font-size: 13px; }
 .custom-provider-item .provider-model { font-size: 12px; color: #666; }
-.custom-provider-item .delete-btn { background: #ff4444; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+.custom-provider-item .delete-btn { background: #ff4444; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; margin-left: 4px; }
+.custom-provider-item .edit-btn { background: #4A90D9; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
 
 /* Modal */
 .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999999; display: flex; align-items: center; justify-content: center; }

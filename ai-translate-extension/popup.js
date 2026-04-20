@@ -88,6 +88,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // 渲染自定义提供商列表
+  let editingProviderId = null;
+
   function renderCustomProviders() {
     const list = document.getElementById('custom-providers-list');
     list.innerHTML = '';
@@ -100,9 +102,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="provider-name">${escapeHtml(p.name)}</div>
           <div class="provider-model">${escapeHtml(p.baseUrl)} / ${escapeHtml(p.defaultModel)}</div>
         </div>
+        <button class="edit-btn" data-id="${escapeHtml(p.id)}">编辑</button>
         <button class="delete-btn" data-id="${escapeHtml(p.id)}">删除</button>
       `;
       list.appendChild(item);
+    });
+
+    list.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const provider = apiConfig.providers.find(p => p.id === id);
+        if (!provider) return;
+        editingProviderId = id;
+        document.getElementById('new-provider-name').value = provider.name;
+        document.getElementById('new-provider-base-url').value = provider.baseUrl;
+        document.getElementById('new-provider-model').value = provider.defaultModel;
+        document.getElementById('new-provider-key').value = apiConfig.apiKeys[id] || '';
+        document.getElementById('add-provider-btn').textContent = '更新';
+        document.getElementById('add-provider-btn').dataset.editing = 'true';
+      });
     });
 
     list.querySelectorAll('.delete-btn').forEach(btn => {
@@ -133,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 添加自定义提供商
+  // 添加/更新自定义提供商
   document.getElementById('add-provider-btn').addEventListener('click', async () => {
     const name = document.getElementById('new-provider-name').value.trim();
     const baseUrl = document.getElementById('new-provider-base-url').value.trim();
@@ -145,20 +163,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const id = 'custom_' + Date.now();
-    apiConfig.providers.push({
-      id,
-      name,
-      baseUrl,
-      models: [model],
-      defaultModel: model,
-      apiKey,
-      isCustom: true
-    });
-    apiConfig.apiKeys[id] = apiKey;
-    apiConfig.activeProvider = id;
+    if (editingProviderId) {
+      // 更新现有提供商
+      const provider = apiConfig.providers.find(p => p.id === editingProviderId);
+      if (provider) {
+        provider.name = name;
+        provider.baseUrl = baseUrl;
+        provider.defaultModel = model;
+        provider.models = [model];
+        apiConfig.apiKeys[editingProviderId] = apiKey;
+      }
+      await sendMessage({ action: 'saveApiConfig', config: apiConfig });
 
-    await sendMessage({ action: 'saveApiConfig', config: apiConfig });
+      // 重置表单
+      editingProviderId = null;
+      document.getElementById('add-provider-btn').textContent = '添加';
+      document.getElementById('add-provider-btn').dataset.editing = '';
+
+      showStatus('更新成功', 'success');
+    } else {
+      // 添加新提供商
+      const id = 'custom_' + Date.now();
+      apiConfig.providers.push({
+        id,
+        name,
+        baseUrl,
+        models: [model],
+        defaultModel: model,
+        apiKey,
+        isCustom: true
+      });
+      apiConfig.apiKeys[id] = apiKey;
+      apiConfig.activeProvider = id;
+
+      await sendMessage({ action: 'saveApiConfig', config: apiConfig });
+      updateModelSelect(id);
+      document.getElementById('api-key-input').value = apiKey;
+
+      showStatus('添加成功', 'success');
+    }
 
     // 清空表单
     document.getElementById('new-provider-name').value = '';
@@ -168,9 +211,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderCustomProviders();
     updateProviderSelect();
-    updateModelSelect(id);
-    document.getElementById('api-key-input').value = apiKey;
-    showStatus('添加成功', 'success');
   });
 
   renderCustomProviders();
