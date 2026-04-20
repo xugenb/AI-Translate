@@ -302,6 +302,16 @@
       return { success: true };
     }
 
+    if (action === 'testConnection') {
+      const { provider, model, apiKey, baseUrl } = message;
+      try {
+        await doTranslate('test', provider, model, apiKey, 'en', 'zh', baseUrl);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
     if (action === 'translate') {
       const apiConfig = await storageGet(STORAGE_KEYS.API_CONFIG) || getDefaultApiConfig();
       const userPrefs = await storageGet(STORAGE_KEYS.USER_PREFS) || getDefaultUserPrefs();

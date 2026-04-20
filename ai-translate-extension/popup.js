@@ -50,6 +50,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     showStatus('保存成功', 'success');
   });
 
+  // 测试连接
+  document.getElementById('test-connection-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('test-connection-btn');
+    const status = document.getElementById('save-status');
+    btn.disabled = true;
+    btn.textContent = '测试中...';
+    status.textContent = '';
+    status.className = 'status';
+
+    const providerId = providerSelect.value;
+    const provider = apiConfig.providers.find(p => p.id === providerId);
+    const baseUrl = provider && provider.baseUrl ? provider.baseUrl : null;
+
+    try {
+      const result = await sendMessage({
+        action: 'testConnection',
+        provider: providerId,
+        model: document.getElementById('model-select').value,
+        apiKey: document.getElementById('api-key-input').value,
+        baseUrl
+      });
+      if (result.success) {
+        status.textContent = '连接成功';
+        status.className = 'status success';
+      } else {
+        status.textContent = result.error || '连接失败';
+        status.className = 'status error';
+      }
+    } catch (err) {
+      status.textContent = err.message || '连接失败';
+      status.className = 'status error';
+    }
+
+    btn.disabled = false;
+    btn.textContent = '测试连接';
+  });
+
   // 渲染自定义提供商列表
   function renderCustomProviders() {
     const list = document.getElementById('custom-providers-list');
