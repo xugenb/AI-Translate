@@ -211,6 +211,14 @@ async function init() {
     const range = window.getSelection().getRangeAt(0);
     range.collapse(false);
     range.insertNode(container);
+    // 检查是否包含代码并添加提示
+    if (hasCodeNodes(originalText)) {
+      const codeHint = document.createElement('div');
+      codeHint.className = 'ai-translate-code-hint';
+      codeHint.textContent = '代码块未被翻译';
+      codeHint.style.cssText = 'font-size:11px;color:#999;margin-top:4px;';
+      container.appendChild(codeHint);
+    }
   }
 
   /**
@@ -367,6 +375,15 @@ function getTextNodes(element) {
       if (['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'IFRAME', 'TEXTAREA', 'INPUT'].includes(parent.tagName)) {
         return NodeFilter.FILTER_REJECT;
       }
+      // 跳过已标记的代码块
+      if (parent.closest('.ai-translate-code-block')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      // 标记代码块父元素
+      if (parent.closest('pre')) {
+        parent.closest('pre').classList.add('ai-translate-code-block');
+        return NodeFilter.FILTER_REJECT;
+      }
       if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }
@@ -401,6 +418,17 @@ function chunkTextNodes(nodes, maxChars) {
   }
   if (currentChunk.nodes.length > 0) chunks.push(currentChunk);
   return chunks;
+}
+
+/**
+ * Checks if text contains code-like patterns
+ * @param {string} text
+ * @returns {boolean}
+ * @private
+ */
+function hasCodeNodes(text) {
+  // 简单检测是否包含代码特征
+  return /[{}\[\]();]/.test(text) && (text.includes('function') || text.includes('const ') || text.includes('var ') || text.includes('=>'));
 }
 
   init();
