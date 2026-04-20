@@ -1,0 +1,6 @@
+{
+  "extName": { "message": "AI Translate Assistant" },
+  "extDescription": { "message": "AI-powered translation with multi-provider support" },
+  "cmdTranslateSelection": { "message": "Translate selected text" },
+  "cmdTranslatePage": { "message": "Translate entire page" }
+}

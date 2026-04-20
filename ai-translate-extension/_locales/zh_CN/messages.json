@@ -1,0 +1,6 @@
+{
+  "extName": { "message": "AI 翻译助手" },
+  "extDescription": { "message": "支持多模型厂商的 AI 翻译插件" },
+  "cmdTranslateSelection": { "message": "翻译选中文字" },
+  "cmdTranslatePage": { "message": "翻译整页" }
+}
